@@ -124,7 +124,7 @@ class Lily():
 		self.removeTabs()
 		self.replaceStrings()
 		self.removeComments()
-		#self.removeLines()
+		self.removeLines()
 		self.removeWhitespace()
 		self.replaceProps()
 
