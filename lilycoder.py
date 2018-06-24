@@ -99,6 +99,7 @@ class Lily():
 
 	uninum = 18
 	createdLilies = []
+	createdJunks = []
 	#......... generates Lily variables .............
 	def generateLily(self):
 		lilystr = bin(self.uninum)[2:]
@@ -123,9 +124,14 @@ class Lily():
 		self.removeTabs()
 		self.replaceStrings()
 		self.removeComments()
-		self.removeLines()
+		#self.removeLines()
 		self.removeWhitespace()
 		self.replaceProps()
+
+		self.injectDummies()
+		self.replaceStrings()
+		self.replaceProps()
+
 		self.replaceVars()
 		self.replaceNums()
 		self.baseInjections()
@@ -244,7 +250,7 @@ class Lily():
 		randNum = random.random()
 		# should the dummy be a string or a number?
 		if randNum<0.5:
-			dummyval = "'"+junkWords[int(random.random()*(len(junkWords)-1))]+"'"
+			dummyval = "'"+self.junkWords[int(random.random()*(len(self.junkWords)-1))]+"'"
 			if random.randint(0,5)>0:
 				dummyval = self.stringLibrary(dummyval)
 		else:
@@ -285,7 +291,7 @@ class Lily():
 						netres+=argval+","
 				if argType=="string":
 					if argRestrict=="":
-						netres += "'"+junkWords[random.randint(0,len(junkWords)-1)]+"',"
+						netres += "'"+self.junkWords[random.randint(0,len(self.junkWords)-1)]+"',"
 					if argRestrict=="(delim)":
 						netres += "'"+commonDelims[random.randint(0,len(commonDelims)-1)]+"',"
 			i+=1
@@ -305,7 +311,10 @@ class Lily():
 		
 		
 	def generateIf(self):
-		dummyvar = self.createdLilies[random.randint(0,len(self.createdLilies)-1)]
+		if len(self.createdJunks)>0:
+			dummyvar = self.createdJunks[random.randint(0,len(self.createdJunks)-1)]
+		else:
+			dummyvar = self.generateLily()
 		randNum = random.random()
 		allopsNum = ["<","<=",">",">="]
 		# should the dummy be a string or a number?
@@ -329,36 +338,42 @@ class Lily():
 	def junk_regex(self,match):
 		if random.random()>0.8:
 			[dummyvar, dummyOp, dummyval] = self.generateIf()
-			[junkvar, junkval] = genjunkvar()
-			randnum = random.randint(0,2)
+			[junkvar, junkval] = self.genjunkvar()
+			self.createdJunks.append(junkvar)
+			randnum = random.randint(0,1)
+			junkinject = junkvar + "="+junkval+";"
 			if randnum==0:
-				junkinject = junkvar + "="+junkval+";"
+				junkinject += self.generateLily() + "=("+junkvar + "=="+junkval+"?"+str(random.randint(0,300)) + ":"+str(random.randint(0,10))+");"
 			elif randnum==1:
-				junkinject = self.generateLily() + "=("+junkvar + "=="+junkval+"?"+str(random.randint(0,300)) + ":"+str(random.randint(0,10))+");"
-			elif randnum==2:
 				lilvar = self.generateLily()
-				junkinject = "for("+lilvar+"=0;"+lilvar+"=="+junkvar+";"+lilvar+"++){"+dummyvar+"="+junkval+";}"
+				self.createdJunks.append(lilvar)
+				junkinject += "for("+lilvar+"=0;"+lilvar+"=="+junkvar+";"+lilvar+"++){"+dummyvar+"="+junkval+";}"
 			
 			#... decide whether or not to encapsulate this in an if statement
 			if random.randint(0,1)==0:
-				print ";"+dummyvar+"='';if("+dummyvar+dummyOp+dummyval+"){"+junkinject+ "}"
+				#print ";"+dummyvar+"='';if("+dummyvar+dummyOp+dummyval+"){"+junkinject+ "}"
+				self.createdJunks.append(dummyvar)
 				return ";"+dummyvar+"='';if("+dummyvar+dummyOp+dummyval+"){"+junkinject+ "};"
 			else:
-				print ";"+junkinject
+				#print ";"+junkinject
 				return ";"+junkinject+";"
 
 		else:
 			return ";"
 
 
+	def junk_regex_pre(self,match):
+		match = match.group()
+		match = match.replace(";", "LILY:::TEMP")
+		return match
+
 
 	#.............. inject junk variables.................
 	def injectDummies(self):
+		self.truestr = re.sub(r"for[ |\t]*?\(.*?;.*?;.*\)", self.junk_regex_pre ,self.truestr)
 		self.truestr = re.sub(r";", self.junk_regex, self.truestr)
+		self.truestr = self.truestr.replace("LILY:::TEMP", ";")
 
-	#injectDummies()
-	#replaceStrings()
-	#replaceProps()
 
 
 
