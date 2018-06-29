@@ -149,22 +149,39 @@ class Lily():
 
 
 	def str_regex(self, match):
-		match = match.group(2)
+		#print (match)
+		#print (match.group(0))
+		#print (match.group(1))
+		#print (match.group(2))
+		#print (match.group(3))
+		#print ("WWW")
+		basematch = match
+		prematch = match.group(1)
+		match = match.group(3)
 		hexarr = ""
 		strPart = match
-		for i in range(0,len(strPart)):
-			hexarr += str(ord(strPart[i]))+","
-		hexarr = hexarr[:-1]
+		if strPart:
+			for i in range(0,len(strPart)):
+				hexarr += str(ord(strPart[i]))+","
+			hexarr = hexarr[:-1]
+		else:
+			hexStr = prematch+basematch.group(2)+basematch.group(2)
+			return hexStr
+
 		# inject the hex replacement
 
-		hexStr = self.strFuncName+"(["+hexarr+"])"
+		hexStr = prematch+ self.strFuncName+"(["+hexarr+"])"
 		return hexStr
 
 
 
 	#............. replace all strings...................
 	def replaceStrings(self):
-		self.truestr = re.sub(r"(\"|\')(.*?)\1",self.str_regex, self.truestr)
+		#self.truestr = re.sub(r"(\"|\')(.*?)\1",self.str_regex, self.truestr)
+		#self.truestr = re.sub(r"(^|[^\\])(\"|\')\2", self.pre_str_regex, self.truestr)
+		#self.truestr = re.sub(r"(^|[^\\])(\"|\')\2\2(.*?[^\\])?\2\2\2",self.str_regex, self.truestr)
+		self.truestr = re.sub(r"(^|[^\\])(\"|\')\2\2(.*?)(?<!\\)\2\2\2",self.str_regex, self.truestr)		
+		self.truestr = re.sub(r"(^|[^\\])(\"|\')(.*?)(?<!\\)\2",self.str_regex, self.truestr)
 
 	# we have to replace the strings FIRST otherwise the whitespace remover could erroneously remove string character's whitespace
 
